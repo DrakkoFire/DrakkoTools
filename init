@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+import sys, os, time, json, shlex, subprocess, random
+from termcolor import colored
+from functions import *
+
+# Para tener mas tiempo de bucle, cámbiame
+cambiame = 90
+
+# Desde aquí en adelante si cambias algo es bajo tu propia responsabilidad
+#
+#################################################################
+#																#
+#																#
+#																#
+#					Creado por DrakkoFire						#
+#																#
+#				https://github.com/DrakkoFire					#
+#																#
+#																#
+#																#
+#################################################################
+
+
+clear()
+info()
+try:
+
+	interf = selInterface() 
+	archivo = "/etc/network/interfaces"
+
+	time.sleep(.5)
+	clear()
+	ip_temp = getIP(interf)
+	ip_primera = ip_temp[2]
+	while True:
+		data = getIP(interf)
+		clear()
+		info()
+		ip_parts = getPieces(data[2])
+		print(colored("[*] Interfaz ", "blue") + interf + "\n" + colored("[*] IP ","blue") + data[2] + "\n" + colored("[*] MAC ", "blue") + data[0] + "\n" + colored("[*] Máscara ", "blue") + str(data[1]) )
+
+
+
+		occupied = True
+		print("\n" + colored("---[","blue") + "Buscando una IP disponible" + colored("]---","blue") + "\n")
+		while occupied:
+			rand = random.randrange(2,254)
+			ip_str = str(ip_parts[0]) + "." + str(ip_parts[1]) + "." + str(ip_parts[2]) + "." +str(rand)
+			occupied = checkIp(ip_str)
+			if occupied:
+				print(colored("[-] ","red") + "%s está ocupada." % ip_str)
+			else: 
+				print(colored("[+] ","green") + "%s está disponible." % ip_str)
+
+		gw = getGw()
+		conf = configurarRed(interf, ip_str, data[1], gw, data[0])
+		clear()
+		contador = cambiame
+		while contador > 0:
+			clear()
+			contador -= 1
+			info()
+			data = getIP(interf)
+			print(colored("[*] Interfaz ", "blue") + interf + "\n" + colored("[*] IP ","blue") + data[2] + "\n" + colored("[*] MAC ", "blue") + data[0] + "\n" + colored("[*] Máscara ", "blue") + str(data[1]) )
+			print("En %s segundos se vuelve a cambiar toda la configuración" % colored(contador,"green"))
+			time.sleep(1)
+		contador = 0
+except KeyboardInterrupt:
+	clear()
+	mac = macGenerator()
+	gw = getGw()
+	print(colored("---[","blue") + "Revirtiendo configuraciones..." + colored("]---","blue"))
+	copia(archivo, revert=True)
+	os.system("ifconfig %s down" % interf)
+	time.sleep(.5)
+	print(colored("---[","blue") + "Devolviendo la IP inicial...")
+	os.system("ifconfig {0} {1}/{2}".format(interf,ip_primera,ip_temp[1]))
+	time.sleep(.5)
+	os.system("ifconfig %s up" % interf)
+	time.sleep(.5)
+	print(colored("---[","blue") + "Reseteando los adaptadores de red...")
+	os.system("/etc/init.d/networking restart > /dev/null 2>&1")
+	time.sleep(.5)
+	os.system("ifconfig %s down" % interf)
+	time.sleep(1)
+	print(colored("---[","red") + "Revirtiendo la MAC")
+	time.sleep(.5)
+	os.system("macchanger -p %s > /dev/null 2>&1" % interf)
+	time.sleep(1)
+	os.system("ifconfig %s up" % interf)
+	print(colored("---[","blue") + "Agregando la puerta de enlace")
+	os.system("route add default gw %s" % gw)
+	time.sleep(1)
+	print("(º _ º) YA TE VAS?! ")
+	time.sleep(3)
+	clear()
+	exit()
+except:
+	print(colored("---[","red") + "No sé que has hecho, pero la has liado" + colored("]---","red"))
+	time.sleep(3)
+	clear()
+	exit()
