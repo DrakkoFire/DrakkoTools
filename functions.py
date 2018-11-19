@@ -107,8 +107,8 @@ def archivoRed(interf,ip,gw,prefix):
 	return r
 
 def copia(archivo, revert = False):
-	backup = "/root/cmac/backup/copia-interfaces"
-	backup_dir = "/root/cmac/backup"
+	backup = "/root/DrakkoTools/backup/copia-interfaces"
+	backup_dir = "/root/DrakkoTools/backup"
 	if revert == True:
 		print(colored("---[","blue") + "Moviendo " + colored(backup,"blue") + " -> " + colored(archivo,"green"))
 		os.system("cp " + backup + " " + archivo)

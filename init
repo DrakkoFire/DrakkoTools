@@ -4,7 +4,7 @@ import sys, os, time, json, shlex, subprocess, random
 from termcolor import colored
 from functions import *
 
-# Para tener mas tiempo de bucle, cámbiame
+# Cambia esta variable para modificar cada cuanto se renueva la configuración
 cambiame = 90
 
 # Desde aquí en adelante si cambias algo es bajo tu propia responsabilidad
