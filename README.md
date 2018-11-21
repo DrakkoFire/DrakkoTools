@@ -20,4 +20,4 @@ La máquina virtual fue descargada desde la página oficial de kali linux:
 
 	-Máquinas virtuales: https://www.offensive-security.com/kali-linux-vm-vmware-virtualbox-image-download/
 
-El creador de la herramienta ni ninguno de sus contribuyentes se hacen responsable del mal uso que se le de.
+Ni el creador de la herramienta ni ninguno de sus contribuyentes se hacen responsable del mal uso que se le de.
