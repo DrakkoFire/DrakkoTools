@@ -1,33 +1,50 @@
 #!/usr/bin/env python3
 
-import sys, os, time, json, shlex, subprocess, random
+import sys, os, time, json, shlex, subprocess, random, argparse
 from termcolor import colored
 from functions import *
 
-# Cambia esta variable para modificar cada cuanto se renueva la configuración
-cambiame = 90
 
-# Desde aquí en adelante si cambias algo es bajo tu propia responsabilidad
-#
-#################################################################
-#																#
-#																#
-#																#
-#					Creado por DrakkoFire						#
-#																#
-#				https://github.com/DrakkoFire					#
-#																#
-#																#
-#																#
-#################################################################
+			#################################################################
+			#																#
+			#																#
+			#																#
+			#					Creado por DrakkoFire						#
+			#																#
+			#				https://github.com/DrakkoFire					#
+			#																#
+			#																#
+			#																#
+			#################################################################
 
 
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", help="El tiempo que dura cada configuración, por defecto el valor es 90", type=int)
+parser.add_argument("-p", help="Ver los programas necesarios para que funcione bien todo", action="store_true")
+args = parser.parse_args()
+
+if args.p == True:
+	clear()
+	info()
+	print('\033[1m' +  '{: ^75}'.format("█════[Programas]════█"))
+	print('\n\033[1m' +  '{: ^75}'.format("MacChanger (Testeado con versión 1.7.0)"))
+	print('\n\033[1m' +  '{: ^75}'.format("IP Utility"))
+	print('\n')
+	exit()
+else:
+	if args.t == None:
+		tiempo = 90
+	else:
+		tiempo = args.t
+			
 clear()
 info()
 try:
 
-	interf = selInterface() 
-	archivo = "/etc/network/interfaces"
+	interfcs = displayInt()
+	interf = selInterface(interfcs) 
+	archivo = "/etc/network/interfaces" # El archivo donde está la configuración de red
 
 	time.sleep(.5)
 	clear()
@@ -38,7 +55,8 @@ try:
 		clear()
 		info()
 		ip_parts = getPieces(data[2])
-		print(colored("[*] Interfaz ", "blue") + interf + "\n" + colored("[*] IP ","blue") + data[2] + "\n" + colored("[*] MAC ", "blue") + data[0] + "\n" + colored("[*] Máscara ", "blue") + str(data[1]) )
+		printData(interf, data[2], data[0], data[1])
+		# print('\033[1m' + colored(" [*] Interfaz ", "blue") + interf + "\n" + '\033[1m' + colored(" [*] IP ","blue") + data[2] + "\n" + '\033[1m' + colored(" [*] MAC ", "blue") + data[0] + "\n" + '\033[1m' + colored(" [*] Máscara ", "blue") + str(data[1]) )
 
 
 
@@ -47,6 +65,7 @@ try:
 		while occupied:
 			rand = random.randrange(2,254)
 			ip_str = str(ip_parts[0]) + "." + str(ip_parts[1]) + "." + str(ip_parts[2]) + "." +str(rand)
+			print(colored("[ ] ", "blue") + ip_str, sep="", end="\r");
 			occupied = checkIp(ip_str)
 			if occupied:
 				print(colored("[-] ","red") + "%s está ocupada." % ip_str)
@@ -56,48 +75,68 @@ try:
 		gw = getGw()
 		conf = configurarRed(interf, ip_str, data[1], gw, data[0])
 		clear()
-		contador = cambiame
+		contador = tiempo
 		while contador > 0:
 			clear()
 			contador -= 1
 			info()
 			data = getIP(interf)
-			print(colored("[*] Interfaz ", "blue") + interf + "\n" + colored("[*] IP ","blue") + data[2] + "\n" + colored("[*] MAC ", "blue") + data[0] + "\n" + colored("[*] Máscara ", "blue") + str(data[1]) )
-			print("En %s segundos se vuelve a cambiar toda la configuración" % colored(contador,"green"))
+			printData(interf, data[2], data[0], data[1])
+
+			# print(colored("[*] Interfaz ", "blue") + interf + "\n" + colored("[*] IP ","blue") + data[2] + "\n" + colored("[*] MAC ", "blue") + data[0] + "\n" + colored("[*] Máscara ", "blue") + str(data[1]) )
+			print(colored(" CTRL + C","yellow") + " para revertir los cambios")
+			print(" En %s segundos se vuelve a cambiar toda la configuración" % colored(contador,"green"))
 			time.sleep(1)
 		contador = 0
 except KeyboardInterrupt:
 	clear()
+	info()
 	mac = macGenerator()
 	gw = getGw()
-	print(colored("---[","blue") + "Revirtiendo configuraciones..." + colored("]---","blue"))
-	copia(archivo, revert=True)
+	print(colored("[ ]","blue") + "Revirtiendo configuraciones..." + colored("]---","blue"), end="\r")
+	if copia(archivo, revert=True):
+		print(colored("[+]","green") + "Configuraciones revertidas" + colored("]---","blue"))
+
 	os.system("ifconfig %s down" % interf)
 	time.sleep(.5)
-	print(colored("---[","blue") + "Devolviendo la IP inicial...")
+
+	print(colored("[ ]","blue") + "Devolviendo la IP inicial...", end="\r")
 	os.system("ifconfig {0} {1}/{2}".format(interf,ip_primera,ip_temp[1]))
 	time.sleep(.5)
+
 	os.system("ifconfig %s up" % interf)
+	print(colored("[+]","green") + "IP Inicial devuelta" + " "*10)
 	time.sleep(.5)
-	print(colored("---[","blue") + "Reseteando los adaptadores de red...")
+
+	print(colored("[ ]","blue") + "Reseteando los adaptadores de red...", end="\r")
 	os.system("/etc/init.d/networking restart > /dev/null 2>&1")
+	print(colored("[+]","green") + "Adaptadores de red reseteados con éxito")
 	time.sleep(.5)
+
+	print(colored("[ ]","blue") + "Revirtiendo la MAC...", end="\r")
 	os.system("ifconfig %s down" % interf)
 	time.sleep(1)
-	print(colored("---[","red") + "Revirtiendo la MAC")
+
 	time.sleep(.5)
+
 	os.system("macchanger -p %s > /dev/null 2>&1" % interf)
 	time.sleep(1)
+
 	os.system("ifconfig %s up" % interf)
-	print(colored("---[","blue") + "Agregando la puerta de enlace")
+	print(colored("[+]","green") + "Direcciones MAC revertidas con éxito")
+	print(colored("[ ]","blue") + "Agregando la puerta de enlace...", end="\r")
 	os.system("route add default gw %s" % gw)
+	print(colored("[+]","green") + "Puerta de enlace agregada con éxito" + " " * 10)
 	time.sleep(1)
-	print("(º _ º) YA TE VAS?! ")
+
+	print("\n" + '\033[1m' +  '{: ^75}'.format("<═════[¡Hasta pronto!]═════>"))
+	# print('\033[1m' + colored("=" * 25 + "[","blue")+ '\033[0m' + "¡Hasta pronto!" + '\033[1m' + colored("]" + "=" * 25,"blue") + '\033[0m')
 	time.sleep(3)
+
 	clear()
 	exit()
-except:
-	print(colored("---[","red") + "No sé que has hecho, pero la has liado" + colored("]---","red"))
-	time.sleep(3)
-	clear()
-	exit()
+# except:
+# 	print(colored("---[","red") + "No sé que has hecho, pero la has liado" + colored("]---","red"))
+# 	time.sleep(3)
+# 	clear()
+# 	exit()
